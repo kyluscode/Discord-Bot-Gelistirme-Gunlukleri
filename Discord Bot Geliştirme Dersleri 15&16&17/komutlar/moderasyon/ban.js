@@ -1,50 +1,44 @@
-const Discord = require("discord.js");
+const Discord = require('discord.js');
+const client = new Discord.Client();
 
-module.exports = {
-    komut: "ban", 
-    açıklama: ".",
-    kategori: "moderasyon", 
-    alternatifler: ['.'],
-    kullanım: "!ban", 
-    yetki: "BAN_MEMBERS",
-    args: [
-        {
-           anahtar:"banlanacakkisi",
-           soru:"Hangi üyeyi banlamak istiyorsunuz?",
-           tip:"kullanici"  
-        },
-        {
-            anahtar:"banlanmanedeni",
-            soru:"Bu kişyi neden banlamak istiyorsunuz?",
-            tip:"yazi"
-        }
-    ]
+exports.run = (client, message, args) => {
+  if (!message.guild) {
+  const ozelmesajuyari = new Discord.RichEmbed()
+  .setColor(0xFF0000)
+  .setTimestamp()
+  .setAuthor(message.author.username, message.author.avatarURL)
+  .addField('⚠️', '`ban` adlı komutu özel mesajlarda kullanamazsın.')
+  return message.author.sendEmbed(ozelmesajuyari); }
+  let guild = message.guild
+  let reason = args.slice(1).join(' ');
+  let user = message.mentions.users.first();
+  let modlog = guild.channels.find('name', 'mod-log');
+  if (!modlog) return message.reply('`mod-log` kanalını bulamıyorum.');
+  if (reason.length < 1) return message.reply('Ban sebebini yazmalısın.');
+  if (message.mentions.users.size < 1) return message.reply('Kimi banlayacağını yazmalısın.').catch(console.error);
+
+  if (!message.guild.member(user).bannable) return message.reply('Yetkilileri banlayamam.');
+  message.guild.ban(user, 2);
+
+  const embed = new Discord.RichEmbed()
+    .setColor(0x00AE86)
+    .setTimestamp()
+    .addField('Eylem:', 'Ban')
+    .addField('Kullanıcı:', `${user.username}#${user.discriminator} (${user.id})`)
+    .addField('Yetkili:', `${message.author.username}#${message.author.discriminator}`)
+    .addField('Sebep', reason);
+  return guild.channels.get(modlog.id).sendEmbed(embed);
 };
 
-module.exports.baslat = (client,message, args) => {
+exports.conf = {
+  enabled: true,
+  guildOnly: true,
+  aliases: [],
+  permLevel: 2
+};
 
-//verilerimizi çekelim
-let banlanacakkisi = args.banlanacakkisi;
-let banlanmanedeni = args.banlanmanedeni;
-let banlogchannel = message.guild.channels.find(x => x.name === "ban-log")
-
-if(!banlogchannel) {
-    message.channel.send("Ban atabilmek için lütfen ban-log adlı kanalı oluşturunuz.")
-}
-
-message.guild.member(banlanacakkisi).ban()
-
-message.channel.send(":white_check_mark: | Başarı ile "+ banlanacakkisi.username + " kullanıcısı banlandı.")
-
-
-message.guild.channels.get(banlogchannel.id).send(new Discord.RichEmbed()
-.addField("Banlanan kişi:",banlanacakkisi.username,true)
-.addField("Banlayan kişi:",message.author.username, true)
-.addField("Banlanma Nedeni:",banlanmanedeni, true)
-.setColor("RANDOM")
-.setTimestamp()
-.setFooter("Ban-Log Sistemi | Aktila..")
-.setTitle("Ban-Log Sistemi")
-)
-
-}
+exports.help = {
+  name: 'ban',
+  description: 'İstediğiniz kişiyi banlar.',
+  usage: 'ban [kullanıcı] [sebep]'
+};
